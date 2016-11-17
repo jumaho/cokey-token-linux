@@ -649,6 +649,15 @@
 				#dma-cells = <3>;
 				fsl,sdma-ram-script-name = "imx/sdma/sdma-imx53.bin";
 			};
+			
+			scc2: scc2@63fb4000 {
+				compatible = "fsl,imx53-scc2";
+				reg = <0x63fb4000 0x4000 0x07000000 0x4000>;
+				interrupts = <21 23>; // <SMN SCM>
+				clocks = <&clks IMX5_CLK_SCC2_IPG_GATE>,
+				         <&clks IMX5_CLK_SCC2_IPG_GATE>;
+				clock-names = "ipg", "ahb";
+			};
 
 			cspi: cspi@63fc0000 {
 				#address-cells = <1>;

@@ -1,0 +1,78 @@
+How to use the FreeScale i.MX SCC driver.
+The SCC only works based on partitions in the iRAM. It allows one to decrypt
+data from RAM (black data) *into* an iRAM-based partition (red data) and to
+encrypt data the other way around using the i.MX internal unique hardware key.
+Some sample code (not directly compilable):
+
+#include <linux/imx_scc2.h>
+
+const uint8_t SCC_UMID_default[16] = {
+               0x42, 0xfa, 0, 0, 0x43, 0, 0, 0, 0x19, 0, 0, 0, 0x59, 0, 0, 0};
+
+uint32_t scc_part_permissions = SCM_PERM_TH_READ | SCM_PERM_TH_WRITE |
+		SCM_PERM_HD_READ | SCM_PERM_HD_WRITE;
+
+void 		*scc_part_base;
+uint32_t 	scc_part_phys;
+int 		scc_part_no;
+uint8_t 	scc_UMID[16];
+
+int init_scc_partition()
+{
+
+	memcpy(scc_UMID, SCC_UMID_default, sizeof(scc_UMID));
+
+	if (scc_allocate_partition(0, &scc_part_no,
+				&scc_part_base,
+				&scc_part_phys) != SCC_RET_OK)
+		return -EIO;
+
+	printk("Partition allocated at partition_base: %p"
+			" partition status: %d\n", scc_part_base,
+			scc_partition_status(scc_part_base));
+
+	if (scc_engage_partition(scc_part_base,
+				scc_UMID, scc_part_permissions) != SCC_RET_OK)
+		return -EIO;
+
+	printk("Partition engaged. Partition status: %d\n",
+			scc_partition_status(scc_part_base));
+
+}
+
+void deinit_scc_partition()
+{
+	scc_release_partition(scc_part_base);
+}
+
+int decrypt_mem_region_into_scc_partition(void *buf, unsigned int length)
+{
+	uint32_t iv[4];
+	scc_return_t scc_ret;
+
+	iv[0] = 0x12345678;
+	iv[1] = 0x12345678;
+	iv[2] = 0x12345678;
+	iv[3] = 0x12345678;
+
+	// TODO cache flush black_data region, i.e. buf
+
+	printk("buf vaddr: %p, virt_to_phys: %08x\n", buf, virt_to_phys(buf));
+	printk("SCC partition content BEFORE decryption:\n");
+	print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_ADDRESS, 32, 1, scc_part_base, 32, false);
+
+	// TODO normally we should NOT use virt_to_phys but DMA API...  but in our case it seems ok since the
+	// platform developer (Freescale) does it. There seems to be no SystemMMU?
+	scc_ret = scc_decrypt_region((uint32_t) scc_part_base, 0, length,
+			(uint8_t *) virt_to_phys(buf), (uint32_t *)&iv,
+			SCC_CYPHER_MODE_CBC);
+	if (scc_ret != SCC_RET_OK) {
+		printk("scc_decrypt_region failed\n");
+		return -1;
+	}
+
+	printk("SCC partition content AFTER decryption:\n");
+	print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_ADDRESS, 32, 1,
+			scc_part_base, 32, false);
+
+}

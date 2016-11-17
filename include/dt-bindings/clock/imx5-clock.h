@@ -201,6 +201,7 @@
 #define IMX5_CLK_STEP_SEL		189
 #define IMX5_CLK_CPU_PODF_SEL		190
 #define IMX5_CLK_ARM			191
-#define IMX5_CLK_END			192
+#define IMX5_CLK_SCC2_IPG_GATE	192
+#define IMX5_CLK_END			193
 
 #endif /* __DT_BINDINGS_CLOCK_IMX5_H */
