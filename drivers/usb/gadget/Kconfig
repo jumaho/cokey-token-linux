@@ -196,6 +196,9 @@ config USB_F_MIDI
 config USB_F_HID
 	tristate
 
+config USB_F_COKEY
+	tristate
+
 choice
 	tristate "USB Gadget Drivers"
 	default USB_ETH
@@ -422,6 +425,15 @@ config USB_CONFIGFS_F_HID
 	  Human Interface Devices (HID).
 
 	  For more information, see Documentation/usb/gadget_hid.txt.
+
+config USB_CONFIGFS_F_COKEY
+	boolean "CoKey: Cooperative Crypto over USB"
+	depends on USB_CONFIGFS
+	depends on CRYPTO_DEV_SCC2
+	select USB_F_COKEY
+	help
+	  The function can be used to encrypt stuff over USB.
+
 
 source "drivers/usb/gadget/legacy/Kconfig"
 
